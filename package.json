@@ -1,0 +1,33 @@
+{
+  "name": "ticket-stampede",
+  "version": "1.0.0",
+  "description": "��#\u0000 \u0000t\u0000i\u0000c\u0000k\u0000e\u0000t\u0000-\u0000s\u0000t\u0000a\u0000m\u0000p\u0000e\u0000d\u0000e\u0000\r\u0000 \u0000",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vismay1307/ticket-stampede.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/vismay1307/ticket-stampede/issues"
+  },
+  "homepage": "https://github.com/vismay1307/ticket-stampede#readme",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.4.0",
+    "@types/pg": "^8.23.1",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
+  }
+}

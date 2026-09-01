@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: ticket-stampede-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: opprime18
+      POSTGRES_PASSWORD: meganfox1458
+      POSTGRES_DB: ticket_stampede
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+
+volumes:
+  postgres_data:
