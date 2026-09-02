@@ -1,14 +1,11 @@
-import pool from "./client.js";
+import { findTicketById } from "../repositories/ticket.repository.js";
 
-async function testConnection() {
-  try {
-    const result = await pool.query("SELECT NOW()");
-    console.log("Database connected:", result.rows[0]);
-  } catch (error) {
-    console.error("Database connection failed:", error);
-  } finally {
-    await pool.end();
-  }
+async function test() {
+  const ticket = await findTicketById(1);
+
+  console.log("Ticket:", ticket);
+
+  process.exit(0);
 }
 
-testConnection();
+test();
