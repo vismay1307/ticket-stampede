@@ -5,8 +5,10 @@ import {
   decrementTicketQuantity,
 } from "../repositories/ticket.repository.js";
 
-import { createPurchaseRequest } from "../repositories/purchase.repository.js";
-
+import {
+  createPurchaseRequest,
+  findPurchaseByIdempotencyKey,
+} from "../repositories/purchase.repository.js";
 export async function purchaseTicket(
   ticketId: number,
   userId: string,
@@ -14,6 +16,15 @@ export async function purchaseTicket(
   idempotencyKey: string
 ) {
   return db.transaction(async (tx) => {
+    const existingPurchase =
+  await findPurchaseByIdempotencyKey(tx, idempotencyKey);
+
+if (existingPurchase) {
+  return {
+    purchase: existingPurchase,
+    duplicate: true,
+  };
+}
 
     // 1. Ticket ko lock karke nikalo
     const ticket = await findTicketForUpdate(tx, ticketId);
