@@ -1,11 +1,14 @@
-import { findTicketById } from "../repositories/ticket.repository.js";
+import { purchaseTicket } from "../services/purchase.service.js";
 
 async function test() {
-  const ticket = await findTicketById(1);
+  try {
+    const result = await purchaseTicket(1, "user-1", 1);
 
-  console.log("Ticket:", ticket);
-
-  process.exit(0);
+    console.log("Purchase successful:");
+    console.log(result);
+  } catch (error) {
+    console.error("Purchase failed:", error);
+  }
 }
 
 test();
