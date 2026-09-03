@@ -34,3 +34,17 @@ export async function createPurchaseRequest(
 
   return result[0];
 }
+
+export async function updatePurchaseStatus(
+  tx: any,
+  purchaseId: number,
+  status: string
+) {
+  const result = await tx
+    .update(purchaseRequests)
+    .set({ status })
+    .where(eq(purchaseRequests.id, purchaseId))
+    .returning();
+
+  return result[0];
+}
