@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { purchaseTicket } from "../services/purchase.service.js";
+import { processPurchase } from "../services/purchase.service.js";
 
 export async function purchaseController(
   req: Request,
@@ -8,7 +8,8 @@ export async function purchaseController(
   try {
     const { ticketId, userId, quantity } = req.body;
 
-    const idempotencyKey = req.header("Idempotency-Key");
+    const idempotencyKey =
+      req.header("Idempotency-Key");
 
     if (!idempotencyKey) {
       return res.status(400).json({
@@ -16,7 +17,17 @@ export async function purchaseController(
       });
     }
 
-    const result = await purchaseTicket(
+    if (
+      typeof ticketId !== "number" ||
+      typeof userId !== "string" ||
+      typeof quantity !== "number"
+    ) {
+      return res.status(400).json({
+        message: "Invalid request body",
+      });
+    }
+
+    const result = await processPurchase(
       ticketId,
       userId,
       quantity,

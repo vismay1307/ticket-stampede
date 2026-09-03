@@ -3,8 +3,10 @@ import { db } from "../db/client.js";
 import {
   findTicketForUpdate,
   decrementTicketQuantity,
+  findTicketById,
+  incrementTicketQuantity,
 } from "../repositories/ticket.repository.js";
-
+import { processPayment } from "./payment.service.js";
 import {
   createPurchaseRequest,
   findPurchaseByIdempotencyKey,
@@ -21,16 +23,14 @@ export async function purchaseTicket(
   ticketId: number,
   userId: string,
   quantity: number,
-  idempotencyKey: string
+  idempotencyKey: string,
 ) {
   return db.transaction(async (tx) => {
-
     // 1. Check idempotency
-    const existingPurchase =
-      await findPurchaseByIdempotencyKey(
-        tx,
-        idempotencyKey
-      );
+    const existingPurchase = await findPurchaseByIdempotencyKey(
+      tx,
+      idempotencyKey,
+    );
 
     if (existingPurchase) {
       return {
@@ -40,8 +40,7 @@ export async function purchaseTicket(
     }
 
     // 2. Ticket ko lock karke nikalo
-    const ticket =
-      await findTicketForUpdate(tx, ticketId);
+    const ticket = await findTicketForUpdate(tx, ticketId);
 
     if (!ticket) {
       throw new Error("Ticket not found");
@@ -58,22 +57,16 @@ export async function purchaseTicket(
     }
 
     // 5. Inventory decrease
-    const updatedTicket =
-      await decrementTicketQuantity(
-        tx,
-        ticketId,
-        quantity
-      );
+    const updatedTicket = await decrementTicketQuantity(tx, ticketId, quantity);
 
     // 6. Purchase record create
-    const purchase =
-      await createPurchaseRequest(
-        tx,
-        ticketId,
-        userId,
-        quantity,
-        idempotencyKey
-      );
+    const purchase = await createPurchaseRequest(
+      tx,
+      ticketId,
+      userId,
+      quantity,
+      idempotencyKey,
+    );
 
     // 7. Final result
     return {
@@ -84,47 +77,107 @@ export async function purchaseTicket(
   });
 }
 
-
 // =====================================================
 // 2. COMPLETE PURCHASE
 // =====================================================
 
-export async function completePurchase(
+export async function completePurchase(purchaseId: number) {
+  return db.transaction(async (tx) => {
+    // 1. Purchase ko SUCCESS karo
+    const purchase = await updatePurchaseStatus(tx, purchaseId, "SUCCESS");
+
+    if (!purchase) {
+      throw new Error("Purchase not found");
+    }
+
+    // 2. Ticket nikalo
+    const ticket = await findTicketById(tx, purchase.ticketId);
+
+    if (!ticket) {
+      throw new Error("Ticket not found");
+    }
+
+    // 3. Actual ticket price use karo
+    const totalAmount = ticket.price * purchase.quantity;
+
+    // 4. Sales record create karo
+    const sale = await createSale(
+      tx,
+      purchase.id,
+      purchase.ticketId,
+      purchase.userId,
+      purchase.quantity,
+      totalAmount,
+    );
+
+    return {
+      purchase,
+      sale,
+    };
+  });
+}
+export async function failPurchase(
   purchaseId: number
 ) {
   return db.transaction(async (tx) => {
 
-    // 1. Purchase ko SUCCESS karo
+    // 1. Purchase ko FAILED karo
     const purchase =
       await updatePurchaseStatus(
         tx,
         purchaseId,
-        "SUCCESS"
+        "FAILED"
       );
 
     if (!purchase) {
       throw new Error("Purchase not found");
     }
 
-    // 2. Abhi testing ke liye price ₹500
-    const totalAmount =
-      500 * purchase.quantity;
-
-    // 3. Sales table mein record create karo
-    const sale =
-      await createSale(
+    // 2. Ticket quantity wapas lao
+    const ticket =
+      await incrementTicketQuantity(
         tx,
-        purchase.id,
         purchase.ticketId,
-        purchase.userId,
-        purchase.quantity,
-        totalAmount
+        purchase.quantity
       );
 
-    // 4. Final result
     return {
       purchase,
-      sale,
+      ticket,
     };
   });
+}
+
+export async function processPurchase(
+  ticketId: number,
+  userId: string,
+  quantity: number,
+  idempotencyKey: string
+) {
+  // Step 1: Ticket reserve karo + PENDING purchase create karo
+  const result = await purchaseTicket(
+    ticketId,
+    userId,
+    quantity,
+    idempotencyKey
+  );
+
+  // Agar same request already process ho chuki hai
+  if (result.duplicate) {
+    return result;
+  }
+
+  const purchase = result.purchase;
+
+  // Step 2: Payment
+  const paymentSuccessful = await processPayment(
+    result.ticket.price * quantity
+  );
+
+  // Step 3: Payment result
+  if (paymentSuccessful) {
+    return await completePurchase(purchase.id);
+  }
+
+  return await failPurchase(purchase.id);
 }

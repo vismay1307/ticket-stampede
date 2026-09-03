@@ -29,3 +29,32 @@ export async function decrementTicketQuantity(
 
   return result[0];
 }
+
+export async function findTicketById(
+  tx: any,
+  ticketId: number
+) {
+  const result = await tx
+    .select()
+    .from(tickets)
+    .where(eq(tickets.id, ticketId))
+    .limit(1);
+
+  return result[0];
+}
+
+export async function incrementTicketQuantity(
+  tx: any,
+  ticketId: number,
+  quantity: number
+) {
+  const result = await tx
+    .update(tickets)
+    .set({
+      availableQuantity: sql`${tickets.availableQuantity} + ${quantity}`,
+    })
+    .where(eq(tickets.id, ticketId))
+    .returning();
+
+  return result[0];
+}
