@@ -1,12 +1,13 @@
-export async function processPayment(
-  amount: number
-): Promise<boolean> {
-  console.log(`Processing payment of ₹${amount}`);
+let paymentCount = 0;
 
-  // Fake payment processing
-  await new Promise((resolve) =>
-    setTimeout(resolve, 500)
+export async function processPayment(amount: number) {
+  paymentCount++;
+
+  console.log(
+    `Processing payment #${paymentCount} of ₹${amount}`
   );
+
+  await new Promise((resolve) => setTimeout(resolve, 500));
 
   return true;
 }
