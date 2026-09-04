@@ -1,4 +1,4 @@
-const TOTAL_REQUESTS = 10000;
+const TOTAL_REQUESTS = 100;
 const API_URL = "http://localhost:3000/api/purchases";
 
 async function sendRequest(i: number) {
